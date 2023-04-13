@@ -48,7 +48,7 @@ if __name__ == "__main__":
     gateway_ip = sys.argv[2]
 
     # Set the network interface to use for ARP spoofing and packet sniffing
-    iface = "eth0"  # Change this to your network interface
+    iface = "eth0" 
 
     # Start ARP spoofing by sending fake ARP packets to the target and gateway
     print("[+] Starting ARP spoofing...")
