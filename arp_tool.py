@@ -62,4 +62,4 @@ if __name__ == "__main__":
 
     # Start packet sniffing on the network interface to capture packets between the target and gateway
     print("[+] Starting packet sniffing...")
-    sniff_packets(iface, target_ip, gateway_ip)
+    sniff_packets(iface, target_ip)
